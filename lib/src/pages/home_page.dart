@@ -1,108 +1,105 @@
 import 'package:flutter/material.dart';
-import 'package:proyecto/src/model/laboratorio_model.dart';
-import 'package:proyecto/src/providers/laboratorios_providers.dart';
-import 'package:proyecto/src/providers/productos_provider.dart';
+import 'package:flutter/services.dart';
+import 'package:hidden_drawer_menu/hidden_drawer/hidden_drawer_menu.dart';
+import 'package:proyecto/src/pages/horarios_page.dart';
+import 'package:proyecto/src/pages/laboratorios_page.dart';
+import 'package:proyecto/src/pages/registro_salida_page.dart';
 import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
-class HomePage extends StatelessWidget {
-  final productosProvier= new ProductosProvider();
-final prefs = new PreferenciasUsuario();
-  final laboratoriosProvider = new LaboratoriosProvider ();
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+    final prefs = new PreferenciasUsuario();
+  List<ScreenHiddenDrawer> items = new List();
+  @override
+  void initState() {
+    items.add(new ScreenHiddenDrawer(
+        new ItemHiddenMenu(
+          name: "Laboratorios",
+          baseStyle:
+              TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 28.0),
+          colorLineSelected: Colors.blue,
+        ),
+        LaboratoriosPage()));
+
+    items.add(new ScreenHiddenDrawer(
+        new ItemHiddenMenu(
+          name: "Horarios",
+          baseStyle:
+              TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 28.0),
+          colorLineSelected: Colors.blue,
+        ),
+        HorarioPage()));
+
+    items.add(new ScreenHiddenDrawer(
+        new ItemHiddenMenu(
+          name: "Reservación",
+          baseStyle:
+              TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 28.0),
+          colorLineSelected: Colors.blue,
+        ),
+        RegistrarSalidaPage()));
+    items.add(new ScreenHiddenDrawer(
+        new ItemHiddenMenu(
+          onTap: () {
+            if (prefs.recordarme && prefs.numUser != "") {
+              prefs.pagina = 'fast';
+            } else {
+              prefs.pagina = 'ingreso';
+            }
+              Navigator.pushNamed(context, prefs.pagina );
+            
+          },
+          name: "Cerrar sesión",
+          baseStyle:
+              TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 28.0),
+          colorLineSelected: Colors.blue,
+        ),
+        null));
+
+
+         items.add(new ScreenHiddenDrawer(
+        new ItemHiddenMenu(
+          onTap: () {
+              SystemNavigator.pop();
+        
+          },
+          name: "Salir",
+          baseStyle:
+              TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 28.0),
+          colorLineSelected: Colors.blue,
+        ),
+        null));
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('home page'),
-        actions: <Widget>[
-           FlatButton(
-            onPressed: ()=>Navigator.pushReplacementNamed(context, prefs.pagina),
-            child: Text('Cerar sesion')),
-        ],
-      ),
-      body: _listaLab(),
-      floatingActionButton: _crearBoton(context),
+    int page = ModalRoute.of(context).settings.arguments;
+    return HiddenDrawerMenu(
+      backgroundColorMenu: Color.fromRGBO(75, 75, 89, 1.0),
+      backgroundColorAppBar: Color.fromRGBO(1, 127, 255, 1.0),
+      screens: items,
+      initPositionSelected: (page != null) ? page : 0,
+      //    typeOpen: TypeOpen.FROM_RIGHT,
+      //    enableScaleAnimin: true,
+      //    enableCornerAnimin: true,
+      slidePercent: 60.0,
+      verticalScalePercent: 90.0,
+      contentCornerRadius: 40.0,
+      //    iconMenuAppBar: Icon(Icons.menu),
+      //    backgroundContent: DecorationImage((image: ExactAssetImage('assets/bg_news.jpg'),fit: BoxFit.cover),
+      //    whithAutoTittleName: true,
+      //    styleAutoTittleName: TextStyle(color: Colors.red),
+      //    actionsAppBar: <Widget>[],
+      //    backgroundColorContent: Colors.blue,
+      //    elevationAppBar: 4.0,
+      //    tittleAppBar: Center(child: Icon(Icons.ac_unit),),
+      //    enableShadowItensMenu: true,
+      //    backgroundMenu: DecorationImage(image: ExactAssetImage('assets/bg_news.jpg'),fit: BoxFit.cover),
     );
-  }
-Widget _listaLab()
-{
-  return FutureBuilder(
-    future: laboratoriosProvider.getLaborotorios(),
-    builder: (BuildContext context, AsyncSnapshot< List> snapshot) {
-      if(snapshot.hasData)
-      {
-          return ListView.builder(
-          itemCount:snapshot.data.length,
-          itemBuilder: (context,i)=> _laboratorio(snapshot.data[i])
-          );
-      }else
-      {
-        return Container(
-          height: 400.0,
-          child: Center(
-            child: CircularProgressIndicator()
-            )
-        );
-      }
-      
-    },
-  );
-/*
-  laboratoriosProvider.getLaborotorios();
-  return ListView(
-    children: <Widget>[
-      _laboratorio()
-    ],
-  );*/
-}
-Widget _laboratorio(Laboratorio l)
-{
-  return Card(
-    child: Column(
-      children: <Widget>[
-         Container(
-          padding: EdgeInsets.symmetric(horizontal: 5.0,vertical: 10.0),
-          color:Colors.lightBlue,
-          height: 45.0,
-          width: double.infinity,
-          child: Text('Laboratorio ${l.idLaboratorio}',style: TextStyle(color: Colors.white,fontSize: 18.0),),
-        ),
-        SizedBox(height: 70.0,),
-        Divider(color: Colors.black,),
-          Container(
-          padding: EdgeInsets.symmetric(horizontal: 5.0,vertical: 3.0),
-          height: 25.0,
-          width: double.infinity,
-          child: Text('Computadoras diponibles: ${l.disponibles}',style: TextStyle(color: Colors.black,fontSize: 15.0),),
-        ), Divider(color: Colors.black,),
-          Container(
-          padding: EdgeInsets.symmetric(horizontal: 5.0,vertical: 3.0),
-          height: 30.0,
-          width: double.infinity,
-          child: Text('${l.estado}',style: TextStyle(color: Colors.black,fontSize: 15.0),),
-        ),
-      ],
-    ),
-  );
-}
-
- _crearBoton(BuildContext context)
-  {
-    return FloatingActionButton(
-      child: Icon(Icons.add),
-      onPressed: ()=>Navigator.pushNamed(context, 'producto'),
-      backgroundColor: Colors.deepPurple,
-    );
-  }
-
-  void datoslog()
-  {
-       if(prefs.recordarme  && prefs.numUser!="")
-    {
-      prefs.pagina='fast';
-    }else{
-      prefs.pagina='ingreso';
-    }
-     print('regreso a'+prefs.pagina);
-      print('uusario'+prefs.numUser);
   }
 }

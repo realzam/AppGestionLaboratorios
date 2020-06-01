@@ -1,4 +1,4 @@
-package com.example.proyecto
+package escom.control.laboratorios
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

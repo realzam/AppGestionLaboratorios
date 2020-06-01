@@ -66,5 +66,14 @@ class PreferenciasUsuario {
     _prefs.setString('ultimaPagina', value);
   }
 
+  get formatHora{
+    return _prefs.getBool('formatHora') ?? false;
+  }
+
+  set formatHora( bool value ) {
+    _prefs.setBool('formatHora', value);
+  }
+
+
 }
 

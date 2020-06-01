@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:proyecto/src/model/hora_model.dart';
+import 'package:provider/provider.dart';
+import 'package:proyecto/src/model/computadora_model.dart';
 import 'package:proyecto/src/model/laboratorio_model.dart';
-import 'package:proyecto/src/widgets/boton_cool.dart';
+import 'package:proyecto/src/providers/webSocketInformation.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class ReservaPage extends StatefulWidget {
   @override
@@ -11,397 +16,542 @@ class ReservaPage extends StatefulWidget {
 }
 
 class _ReservaPageState extends State<ReservaPage> {
-Laboratorio lab;
-List<Hora> listaDates=new List();
-
-
-
+  Laboratorio lab;
+  String selected;
+  int selectedID;
+  List<String> horasLibres = new List();
+  List<int> horasId = new List();
+  bool visible = false;
+  WebSocketInfo webSocketInfo = new WebSocketInfo();
+  List<Computadora> _computadoras = new List();
   Size tam;
-
-  Color mainColor= Color.fromRGBO(1, 127, 255, 1.0);
-
-  Color secondColor= Color.fromRGBO(0, 102, 151, 1.0);
-
-  Color ed1=Color.fromRGBO(255, 221, 130, 1.0);
-
-  Color ed2=Color.fromRGBO(63, 148,255, 1.0);
-
-  Color ed3=Colors.white;
-
-   String  _chosenValue;
+  bool start = true;
+  Color mainColor = Color.fromRGBO(1, 127, 255, 1.0);
+  Color secondColor = Color.fromRGBO(0, 102, 151, 1.0);
+  Color ed1 = Color.fromRGBO(1, 127, 255, 1.0);
+  Color ed2 =
+      Color.fromRGBO(200, 200, 200, 1.0); //Color.fromRGBO(63, 148,255, 1.0);
+  Color ed3 = Colors.white;
+  var servidorInfo;
+  var storage;
+  int seleccionada = -1;
+  int tipoUsu;
+  TextStyle style1 = TextStyle(color: Colors.black);
+  IOWebSocketChannel channel;
   @override
   Widget build(BuildContext context) {
-   
-  lab = ModalRoute.of(context).settings.arguments;
-   tam =MediaQuery.of(context).size;
-   listaDates=new List();
-    lab.horasLibres.forEach((element) { 
-      listaDates.add(Hora(element));
+    storage = new FlutterSecureStorage();
+    initializeDateFormatting();
+    List arg=ModalRoute.of(context).settings.arguments;
+    lab = arg[0];
+    tipoUsu=arg[1];
+    tam = MediaQuery.of(context).size;
+    
+
+    if (start) {
+      webSocketInfo = Provider.of<WebSocketInfo>(context);
+      
+    }
+    webSocketInfo.intMiReserva();
+    webSocketInfo.listenCompus = true;
+   int i = 0;
+     horasLibres.clear();
+    horasId.clear();
+    lab.horasIDLibres.forEach((element) {
+    //  print('element $element');
+      //print('${webSocketInfo.server.horaID} if>= ${ element >= webSocketInfo.server.horaID}');
+      if (element >= webSocketInfo.server.horaID) {
+         print('add first elemtne to array');
+        horasId.add(element);
+        horasLibres.add(
+            '${lab.horasLibres[i].horaInicio} - ${lab.horasLibres[i].horaFin}');
+      }
+      if (element == webSocketInfo.server.horaID && start)
+      {
+      //  print('add first elemtne to array true iif ');
+        
+        selected = horasLibres[0];
+        selectedID=horasId[0];
+      }
+      i++;
     });
-    if(_chosenValue==null)
-     _chosenValue =DateFormat('kk:mm').format(listaDates[0].inicio);
+  //  print('fin for eche');
+    if(start)
+    {
+      if(horasId.length==0)
+       webSocketInfo.intComputadoras(lab.idLaboratorio);
+      if(webSocketInfo.server.horaID==selectedID)
+        webSocketInfo.intComputadoras(lab.idLaboratorio);
+      else 
+        webSocketInfo.intComputadorasFuture(lab.idLaboratorio, horasId[0]);
+    }
+    start = false;
     return Scaffold(
         appBar: AppBar(
           backgroundColor: mainColor,
           elevation: 0.0,
           leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ), 
-        title: Text("Elegir computadora"),
-      ),
-        body:Stack(
+            icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text("Elegir computadora"),
+        ),
+        body: Stack(
           children: <Widget>[
-          _fondo(),
-          _contenido(),
-          BotonCool()
+            _fondo(),
+            _contenido(),
+            (seleccionada != -1 && !webSocketInfo.reserva.ok)
+                ? boton(context,1)
+                :(tipoUsu==2)? boton(context,2):empty()
           ],
-        )
-    );
+        ));
   }
 
-  Widget _fondo()
-  {
+  Widget empty() {
+    visible = false;
+    return Container();
+  }
+
+  Widget _fondo() {
     return Container(
-      width: tam.width,
-      height: tam.height,
-      color: mainColor,
-    );
+        width: tam.width,
+        height: tam.height,
+        color: Color.fromRGBO(234, 238, 241, 1.0));
   }
 
-  Widget _contenido()
-  {
-    return SingleChildScrollView(
-       
-      child: Column(
-        children: <Widget>[
-          estados(),
-          SizedBox(height: 20.0,),
-          pizaron(),
-          SizedBox(height: 20.0,),
-          computadoras(),
-          SizedBox(height: 10.0,),
-          resumen()
-        ],
-      ),
-    );
-  }
-
-  Widget resumen()
-  {
-    return Stack(
+  Widget locationInfo(int lab) {
+    return Row(
       children: <Widget>[
-        
-          Container(
-            padding: EdgeInsets.all(20.0),
-              height: tam.height*0.9,
-              width: tam.width,
-              decoration: BoxDecoration(
-                  color:Colors.white,//Color.fromRGBO(7, 5, 76, 1.0),
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(40.0),topRight: Radius.circular(40.0) ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: <Widget>[
-                      Icon(FontAwesomeIcons.mapMarkerAlt,color: Color.fromRGBO(7, 5, 76, 1.0)),
-                      SizedBox(width: 5.0,),
-                       Text('Laboratorio ${lab.idLaboratorio}',style: TextStyle(color: Color.fromRGBO(7, 5, 76, 1.0),fontWeight: FontWeight.bold,fontSize: 16.0),),
-                       
-                    ],
-                  ),
-                  SizedBox(height: 10.0,),
-                  horaPick(),
-                ],
-              ),
-            ),
-       
+        SizedBox(
+          width: 2.0,
+        ),
+        FaIcon(FontAwesomeIcons.mapMarkerAlt, color: Colors.black),
+        SizedBox(
+          width: 10.0,
+        ),
+        Text(
+          'Laboratorio $lab',
+          style: TextStyle(fontSize: 16.0, color: Colors.black),
+        )
       ],
     );
   }
 
-List<DropdownMenuItem<String>> getOpcionesDropdown()
-{
-  List<DropdownMenuItem<String>> lista=new List();
-  listaDates.forEach((element) { 
-    var s=DateFormat('kk:mm').format(element.inicio);
-    lista.add(DropdownMenuItem(
-      child:Text(s),
-      value: s,
-    ));
-  });
-return lista;
-}
-
-
-Widget horaPick()
-{
- 
-
-    return  Container(
-      decoration: BoxDecoration(
-                  color:Color.fromRGBO(232, 234, 250, 1.0),//Color.fromRGBO(7, 5, 76, 1.0),
-                  borderRadius: BorderRadius.circular(15.0)
-      ),
-      height: 100.0,
-      width: 95.0,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              SizedBox(width: 100.0,),
-                 DropdownButton(
-              value: _chosenValue,
-              underline: Container(), 
-              icon: Icon(Icons.arrow_downward,color: Colors.black,),
-              iconSize: 20.0, // can be changed, default: 24.0
-              iconEnabledColor: Colors.blue,
-              items: getOpcionesDropdown(),
-              onChanged: (value) {
-                setState(() {
-                  _chosenValue = value;
-
-                });
-              },
-            ),
-            Text('Hora',style: TextStyle(color: Color.fromRGBO(162, 162, 185, 1.0), fontWeight: FontWeight.bold,fontSize: 16.0),)
-            ],
+  Widget _contenido() {
+    return SingleChildScrollView(
+      //['07:00','08:00','09:00','10:00','11:00','12:00']
+      child: Column(
+        children: <Widget>[
+          //ListHorizontal(horas: horasLibres,selected: (lab.estado=="Tiempo libre")?horasLibres[0]:null),
+          SizedBox(
+            height: 5.0,
           ),
-        ),
-      );
-}
+          locationInfo(lab.idLaboratorio),
+          SizedBox(
+            height: 10.0,
+          ),
+          horizontal2(),
+          SizedBox(
+            height: 20.0,
+          ),
+          estados(),
+          SizedBox(
+            height: 20.0,
+          ),
+          pizaron(),
+          SizedBox(
+            height: 20.0,
+          ),
+          StreamBuilder(
+              stream: webSocketInfo.computadorasStream,
+              builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
+                if (snapshot.hasData) {
+                  _computadoras = snapshot.data;
+                  if (seleccionada != -1) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_computadoras[seleccionada - 1].estado !=
+                          "Disponible")
+                        setState(() {
+                          seleccionada = -1;
+                        });
+                      if (visible && webSocketInfo.reserva.ok) setState(() {});
+                      if (webSocketInfo.reserva.ok && seleccionada != -1) {
+                        setState(() {
+                          seleccionada = -1;
+                        });
+                      }
+                    });
+                  }
 
-Widget pizaron()
-{
-  return Center(
-    child:Container(
-      color: Colors.white,
-      height: 12.0,
-      width: 0.5*tam.width,
-      child: Center(child: Text('pizarrón',style: TextStyle(color: Colors.black,fontSize: 12.0),))
-    )
-  );
-}
-
-Widget computadoras()
-{
-  List nums=[1,3,5,7];
-  List nums2=[2,4,6,8];
-  List nums3=[9,10,11,12,13,14,15,16,17];
-  List nums4=[18,19,20,21,22,23,24,25,26];
-  List nums5=[27,29,31,33];
-  List nums6=[28,30,32,34];
- return Container(
-      child:Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children:[
-          columna1(nums),
-          spaceRow1(),
-          columna1(nums2),
-          spaceRow1(),
-          spaceRow1(),
-          columna2(nums3),
-          spaceRow1(),
-          columna2(nums4),
-          spaceRow1(),
-          spaceRow1(),
-          columna1(nums5),
-          spaceRow1(),
-          columna1(nums6),
-        ]
-      )
-    );
-}
-
- Widget spaceCol()
-  {
-    return  SizedBox(height: 0.01*tam.height);
-  }
-
-   Widget spaceRow1()
-  {
-    return  SizedBox(width: 0.025*tam.width);
-  }
-
-  Widget fakeCompu()
-  {
-      return Container
-      (
-        width: 0.08*tam.width,
-        height: 0.08*tam.width,
-        color: Colors.transparent,
-      );
-  }
-
-  Widget columna1(List n)
-  {
-    return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          parFakeCompu(),
-          parFakeCompu(),
-          parCompu(a:n[0]),
-          parFakeCompu(),
-          parCompu(a:n[1]),
-          parFakeCompu(),
-          parCompu(a:n[2]),
-          parFakeCompu(),
-          parCompu(a:n[3]),
-          parFakeCompu(),
+                  return computadoras();
+                } else {
+                  return Column(
+                    children: <Widget>[
+                      SizedBox(
+                        height: 100.0,
+                      ),
+                      SpinKitDoubleBounce(
+                        color: ed1,
+                        size: 50.0,
+                      ),
+                    ],
+                  );
+                }
+              }),
+          SizedBox(
+            height: 60.0,
+          )
         ],
+      ),
     );
   }
 
-  Widget columna2(List n)
-  {
+  Widget pizaron() {
+    return Center(
+        child: Container(
+            color: Colors.white,
+            height: 12.0,
+            width: 0.5 * tam.width,
+            child: Center(
+                child: Text(
+              'pizarrón',
+              style: TextStyle(color: Colors.black, fontSize: 12.0),
+            ))));
+  }
+
+  Widget computadoras() {
+    List nums = [1, 3, 5, 7];
+    List nums2 = [2, 4, 6, 8];
+    List nums3 = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+    List nums4 = [18, 19, 20, 21, 22, 23, 24, 25, 26];
+    List nums5 = [27, 29, 31, 33];
+    List nums6 = [28, 30, 32, 34];
+    return Container(
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      columna1(nums),
+      spaceRow1(),
+      columna1(nums2),
+      spaceRow1(),
+      spaceRow1(),
+      columna2(nums3),
+      spaceRow1(),
+      columna2(nums4),
+      spaceRow1(),
+      spaceRow1(),
+      columna1(nums5),
+      spaceRow1(),
+      columna1(nums6),
+    ]));
+  }
+
+  Widget spaceCol() {
+    return SizedBox(height: 0.01 * tam.height);
+  }
+
+  Widget spaceRow1() {
+    return SizedBox(width: 0.025 * tam.width);
+  }
+
+  Widget fakeCompu() {
+    return Container(
+      width: 0.08 * tam.width,
+      height: 0.08 * tam.width,
+      color: Colors.transparent,
+    );
+  }
+
+  Widget columna1(List n) {
     return Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          parCompu(a:n[0]),
-          parCompu(a:n[1]),
-          parCompu(a:n[2]),
-          parCompu(a:n[3]),
-          parFakeCompu(),
-          parCompu(a:n[4]),
-          parCompu(a:n[5]),
-          parCompu(a:n[6]),
-          parCompu(a:n[7]),
-          parCompu(a:n[8]),
-        ],
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: <Widget>[
+        parFakeCompu(),
+        parFakeCompu(),
+        parCompu(a: n[0]),
+        parFakeCompu(),
+        parCompu(a: n[1]),
+        parFakeCompu(),
+        parCompu(a: n[2]),
+        parFakeCompu(),
+        parCompu(a: n[3]),
+        parFakeCompu(),
+      ],
     );
   }
 
-  Widget parCompu({a:1})
-  {
+  Widget columna2(List n) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: <Widget>[
+        parCompu(a: n[0]),
+        parCompu(a: n[1]),
+        parCompu(a: n[2]),
+        parCompu(a: n[3]),
+        parFakeCompu(),
+        parCompu(a: n[4]),
+        parCompu(a: n[5]),
+        parCompu(a: n[6]),
+        parCompu(a: n[7]),
+        parCompu(a: n[8]),
+      ],
+    );
+  }
+
+  Widget parCompu({a: 1}) {
     return Column(
       children: <Widget>[
         compu(id: a),
-          spaceCol(),
+        spaceCol(),
       ],
     );
-  } 
+  }
 
-   Widget parFakeCompu()
-  {
+  Widget parFakeCompu() {
     return Column(
       children: <Widget>[
         fakeCompu(),
-          spaceCol(),
+        spaceCol(),
       ],
     );
   }
 
-  Widget compu({ed:3,id:0})
-    {
-      
-      Color myestado;
-      Color myborde=Colors.white;
-      switch (ed){
-        case 1:myestado=ed1;myborde=ed1;break;
-        case 2:myestado=ed2;myborde=ed2;break;
+  Widget compu({id: 0}) {
+    print(' $id ${_computadoras[id - 1].estado}');
+    Color myestado;
+    String ed = _computadoras[id - 1].estado;
+    if (seleccionada == id && ed == "Disponible") {
+      myestado = ed1;
+      ed = "Seleccionada";
+    } else {
+      switch (ed) {
+        case 'Disponible':
+          myestado = ed3;
+          break;
         default:
-        myestado=ed3;break;
+          myestado = ed2;
+          break;
       }
-      return Container
-      (
-        width: 0.1*tam.width,
-        height: 0.1*tam.width,
-        decoration: BoxDecoration(
-          color: myestado,
-          borderRadius: BorderRadius.circular(5.0),
-          border: Border.all(color:myborde),
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
-          ),
-          child:GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: (){
-              
-            },
-            child:  Center(
-            child: Text(id.toString(),style: TextStyle(color: Colors.white),)
-          ),
-          ),
-      );
     }
+    return Container(
+      width: 0.11 * tam.width,
+      height: 0.11 * tam.width,
+      decoration: BoxDecoration(
+        color: myestado,
+        borderRadius: BorderRadius.circular(5.0),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
+      ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          if ((ed == "Seleccionada" || ed == "Disponible") &&
+              !webSocketInfo.reserva.ok) {
+            if (seleccionada == id)
+              seleccionada = -1;
+            else
+              seleccionada = id;
+            setState(() {});
+          }
+        },
+        child: Center(
+            child: Text(
+          id.toString(),
+          style: TextStyle(
+              color: (ed == "Disponible") ? Colors.black : Colors.white),
+        )),
+      ),
+    );
+  }
 
-Widget estados()
-{
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    children: <Widget>[
-      estado1(),
-      spaceCol(),
-      estado2(),
-      spaceCol(),
-      estado3()
-    ],
-  );
+  Widget estados() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        estado1(),
+        spaceCol(),
+        estado2(),
+        spaceCol(),
+        estado3()
+      ],
+    );
+  }
+
+  Widget estado1() {
+    return Column(
+      children: <Widget>[
+        Container(
+          width: 0.06 * tam.width,
+          height: 0.06 * tam.width,
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100.0), color: ed1),
+        ),
+        SizedBox(
+          height: 5.0,
+        ),
+        Text(
+          'Seleccionado',
+          style: style1,
+        )
+      ],
+    );
+  }
+
+  Widget estado2() {
+    return Column(
+      children: <Widget>[
+        Container(
+          width: 0.06 * tam.width,
+          height: 0.06 * tam.width,
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(100.0), color: ed2),
+        ),
+        SizedBox(
+          height: 5.0,
+        ),
+        Text(
+          'No disponible',
+          style: style1,
+        )
+      ],
+    );
+  }
+
+  Widget estado3() {
+    return Column(
+      children: <Widget>[
+        Container(
+          width: 0.06 * tam.width,
+          height: 0.06 * tam.width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(100.0),
+            color: ed3,
+          ),
+        ),
+        SizedBox(
+          height: 5.0,
+        ),
+        Text(
+          'Disponible',
+          style: style1,
+        )
+      ],
+    );
+  }
+
+  Widget horizontal2() {
+    return Container(
+      height: 60.0,
+      child: PageView(
+        pageSnapping: false,
+        controller: PageController(initialPage: 1, viewportFraction: 0.35),
+        children: _tarjetas(),
+      ),
+    );
+  }
+
+  List<Widget> _tarjetas() {
+    return horasLibres.map((hora) {
+      return Container(
+        margin: EdgeInsets.only(left: 10.0),
+        child: Center(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                selected = hora;
+                selectedID = horasId[horasLibres.indexOf(selected)];
+                if (lab.estado == "Tiempo libre" &&
+                    horasLibres.indexOf(selected) == 0)
+                  webSocketInfo.intComputadoras(lab.idLaboratorio);
+                else
+                  webSocketInfo.intComputadorasFuture(
+                      lab.idLaboratorio, horasId[horasLibres.indexOf(hora)]);
+              });
+            },
+            child: Container(
+              width: 105.0,
+              height: 35.0,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10.0),
+                  color: (selected == hora)
+                      ? Color.fromRGBO(1, 127, 255, 1.0)
+                      : Colors.transparent),
+              child: Center(
+                  child: Text(hora,
+                      style: TextStyle(
+                          color:
+                              (selected == hora) ? Colors.white : Colors.black,
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold))),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  Widget boton(BuildContext context,int t) {
+    visible = true;
+    return Positioned(
+      bottom: 0.0,
+      right: (t==1)?0.0:null,
+      left: (t==1)?null:0.0,
+      child: GestureDetector(
+        onTap: () async {
+          if (seleccionada == -1 && tipoUsu==1) return null;
+          var datos = new Map();
+          Intl.defaultLocale = 'es';
+          String date;
+          date = DateFormat('d MMM').format(webSocketInfo.server.fecha);
+          String value = await storage.read(key: 'numUsuario');
+          print('datos');
+          datos['lab'] = lab.idLaboratorio;
+          datos['fecha'] = date;
+          datos['hora'] = selected;
+          datos['compu'] = (tipoUsu==2 && seleccionada==-1)?"Todas":seleccionada;
+          datos['boleta'] = value;
+          datos['horaId'] = selectedID;
+          datos['tipoUsu']=tipoUsu;
+          if (datos['compu'] == -1) return null;
+          seleccionada = -1;
+          Navigator.pushNamed(context, 'booking', arguments: datos);
+        },
+        child: Container(
+          width: (t==1)?140.0:120.0,
+          height: 70.0,
+          decoration: BoxDecoration(
+            color: Color.fromRGBO(13, 8, 70, 1.0),
+            borderRadius: (t==1)?BorderRadius.only(topLeft: Radius.circular(30.0)):BorderRadius.only(topRight: Radius.circular(30.0)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    'Reservar',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.0),
+                  ),
+                  Text(
+                    (t==1)?'computadora':'laboratorio',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14.0),
+                  ),
+                ],
+              ),
+              SizedBox(
+                width: 5.0,
+              ),
+              Icon(
+                FontAwesomeIcons.arrowRight,
+                color: Colors.white,
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
-
-  Widget estado1()
-  {
-    return Column(
-      children: <Widget>[
-
-       Container(
-          width: 0.06*tam.width,
-          height: 0.06*tam.width,
-          decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(100.0),
-          color:ed1
-          ),
-          
-        ),
-        SizedBox(height: 5.0,),
-        Text('Seleccionado',style: TextStyle(color: Colors.white,fontSize: 14.0),)
-      ],
-    );
-  }
-
-Widget estado2()
-  {
-    return Column(
-      children: <Widget>[
-
-       Container(
-          width: 0.06*tam.width,
-          height: 0.06*tam.width,
-          decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(100.0),
-          color:ed2,
-          border: Border.all(color:Colors.white),
-          ),
-          
-        ),
-        SizedBox(height: 5.0,),
-       Text('No disponible',style: TextStyle(color: Colors.white,fontSize: 14.0),)
-      ],
-    );
-  }
-
-  Widget estado3()
-  {
-    return Column(
-      children: <Widget>[
-
-       Container(
-          width: 0.06*tam.width,
-          height: 0.06*tam.width,
-          decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(100.0),
-          color:ed3,
-          border: Border.all(color:Colors.white),
-          ),
-          
-        ),
-        SizedBox(height: 5.0,),
-       Text('Disponible',style: TextStyle(color: Colors.white,fontSize: 14.0),)
-      ],
-    );
-  }
-}
-
-
-

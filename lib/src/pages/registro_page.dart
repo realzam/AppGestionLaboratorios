@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:proyecto/src/bloc/provider.dart';
 import 'package:proyecto/src/providers/usuario_provider.dart';
 import 'package:proyecto/src/utils/utils.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class RegistroPage extends StatefulWidget {
 
@@ -69,6 +70,8 @@ Widget _loginForm(BuildContext context)
               SizedBox(height: 60.0,),
               _crearNumeroUsuario(bloc),
               SizedBox(height: 30.0,),
+              _crearNombre(bloc),
+              SizedBox(height: 30.0,),
               _crearEmail(bloc),
               SizedBox(height: 30.0,),
               _crearPassword(bloc),
@@ -98,12 +101,33 @@ Widget _crearNumeroUsuario(LoginBloc bloc)
             child: TextField(
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                icon:Icon(Icons.accessibility, color: mainColor,),
+                icon:Icon(FontAwesomeIcons.idCard, color: mainColor,),
                // hintText: '2016961245',
                 labelText: 'No.Boleta/No.Empleado',
                 errorText: snapshot.error
               ),
               onChanged: bloc.changeNumeroUsuario,
+            ),
+          );
+      }
+    );
+}
+
+Widget _crearNombre(LoginBloc bloc)
+{
+  return StreamBuilder(
+    stream: bloc.nombreStream,
+    builder: (BuildContext context,AsyncSnapshot snapshot){
+        return Container(
+            padding: EdgeInsets.symmetric(horizontal: 20.0),
+            child: TextField(
+              decoration: InputDecoration(
+                icon:Icon(FontAwesomeIcons.user,color: mainColor),
+               // hintText: '2016961245',
+                labelText: 'Nombre completo',
+                errorText: snapshot.error
+              ),
+              onChanged: bloc.changeNombre
             ),
           );
       }
@@ -230,7 +254,7 @@ _register(BuildContext context,LoginBloc bloc)async{
     {
       mostrarAlerta(context,'las contraseñas son diferentes');
     }else{
-       final info= await usuarioProvider.nuevoUsuario(bloc.numeroUsuario,bloc.email, bloc.password);
+       final info= await usuarioProvider.nuevoUsuario(bloc.numeroUsuario,bloc.email, bloc.password,bloc.nombre,1);
         if(info['ok'] )
       {
       Navigator.pushReplacementNamed(context, 'home');

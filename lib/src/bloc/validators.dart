@@ -35,6 +35,21 @@ class Validators{
     }
   );
 
+final validarNombre = StreamTransformer<String,String>.fromHandlers(
+     
+    handleData: (nombre,sink){
+      Pattern pattern = r"^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð '.-]*$";
+      RegExp regExp=new RegExp(pattern);
+    if(regExp.hasMatch(nombre))
+      {
+        sink.add(nombre);
+      }else
+      {
+        sink.addError('Nombre incorecto');
+      }
+    }
+  );
+
   final validarPassword = StreamTransformer<String,String>.fromHandlers(
     handleData: (password,sink){
       if(password.length>=8)
