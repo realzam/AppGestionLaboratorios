@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:proyecto/src/providers/usuario_provider.dart';
+import 'package:proyecto/src/providers/webSocketInformation.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
+
 class BookingPage extends StatefulWidget {
   @override
   _BookingPageState createState() => _BookingPageState();
@@ -17,19 +21,24 @@ class _BookingPageState extends State<BookingPage> {
   bool visible=true;
   bool load=false;
   final usuarioProvider = new UsuarioProvider();
- 
+  StreamSubscription subscription;
+   WebSocketInfo webSocketInfo = new WebSocketInfo();
 
   @override
   Widget build(BuildContext context) {
     datos = ModalRoute.of(context).settings.arguments;
     tam = MediaQuery.of(context).size;
+    
 if(start)
 {
+  webSocketInfo = Provider.of<WebSocketInfo>(context);
 _cambiarHijo(null);
 start=false;
 }
 
-    
+    subscription = webSocketInfo.reservarStream.listen((event) {
+        print('hubo un cambien en tu reserva');
+      });
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color.fromRGBO(1, 127, 255, 1.0),
@@ -277,10 +286,10 @@ start=false;
     {
       load=true;
       Map info;
-      if(datos['compu']!=-1)
+      if(datos['compu']!="Todas" && datos['compu']!=-1 && webSocketInfo.reservaCompu)
         info =await usuarioProvider.reservarComputadora(datos['compu'], datos['lab'], datos['horaId']);
-      else if(datos['compu']=="Todas" && datos['tipoUsu']==2)
-        info =await usuarioProvider.reservarComputadora(datos['compu'], datos['lab'], datos['horaId']);
+      else if(datos['compu']=="Todas" && datos['tipoUsu']==2 && webSocketInfo.canReservaLab)
+        info =await usuarioProvider.reservarLaboratorio(datos['lab'], datos['horaId']);
 
       _index=info['status'];
     _cambiarHijo(info['mensaje']);

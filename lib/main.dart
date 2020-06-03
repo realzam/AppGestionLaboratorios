@@ -59,7 +59,7 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => WebSocketInfo()),
         ChangeNotifierProvider(create: (_) => LaboratoriosInfo()),
-        ChangeNotifierProvider(create: (_) => HorarioInfo())
+        ChangeNotifierProvider(create: (_) => HorarioInfo()),
       ],
       child: ProviderBloc(
           child: MaterialApp(

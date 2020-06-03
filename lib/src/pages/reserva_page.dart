@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto/src/model/computadora_model.dart';
 import 'package:proyecto/src/model/laboratorio_model.dart';
+import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
 import 'package:proyecto/src/providers/webSocketInformation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:web_socket_channel/io.dart';
@@ -16,13 +19,15 @@ class ReservaPage extends StatefulWidget {
 }
 
 class _ReservaPageState extends State<ReservaPage> {
+  final prefs = new PreferenciasUsuario();
+  var timer;
   Laboratorio lab;
   String selected;
   int selectedID;
   List<String> horasLibres = new List();
   List<int> horasId = new List();
   bool visible = false;
-  WebSocketInfo webSocketInfo = new WebSocketInfo();
+  WebSocketInfo webSocketInfo;
   List<Computadora> _computadoras = new List();
   Size tam;
   bool start = true;
@@ -38,71 +43,82 @@ class _ReservaPageState extends State<ReservaPage> {
   int tipoUsu;
   TextStyle style1 = TextStyle(color: Colors.black);
   IOWebSocketChannel channel;
+  StreamSubscription subscription;
+  @override
+  void initState() { 
+    super.initState();
+    prefs.paginaActual = 'reserva_page';
+  }
+  @override
+  void dispose() {
+    subscription.cancel();
+    print('subscription cancel');
+
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     storage = new FlutterSecureStorage();
     initializeDateFormatting();
-    List arg=ModalRoute.of(context).settings.arguments;
+    List arg = ModalRoute.of(context).settings.arguments;
     lab = arg[0];
-    tipoUsu=arg[1];
+    tipoUsu = arg[1];
     tam = MediaQuery.of(context).size;
-    
 
     if (start) {
       webSocketInfo = Provider.of<WebSocketInfo>(context);
-      
+      webSocketInfo.listenCompus = true;
+      webSocketInfo.intMiReserva();
+      webSocketInfo.intComputadoras(lab.idLaboratorio);
     }
-    webSocketInfo.intMiReserva();
     webSocketInfo.listenCompus = true;
-   int i = 0;
-     horasLibres.clear();
+    int i = 0;
+    horasLibres.clear();
     horasId.clear();
     lab.horasIDLibres.forEach((element) {
-    //  print('element $element');
-      //print('${webSocketInfo.server.horaID} if>= ${ element >= webSocketInfo.server.horaID}');
       if (element >= webSocketInfo.server.horaID) {
-         print('add first elemtne to array');
         horasId.add(element);
         horasLibres.add(
             '${lab.horasLibres[i].horaInicio} - ${lab.horasLibres[i].horaFin}');
       }
-      if (element == webSocketInfo.server.horaID && start)
-      {
-      //  print('add first elemtne to array true iif ');
-        
+      if (element == webSocketInfo.server.horaID && start) {
+        //  print('add first elemtne to array true iif ');
+
         selected = horasLibres[0];
-        selectedID=horasId[0];
+        selectedID = horasId[0];
       }
       i++;
     });
-  //  print('fin for eche');
-    if(start)
-    {
-      if(horasId.length==0)
-       webSocketInfo.intComputadoras(lab.idLaboratorio);
-      if(webSocketInfo.server.horaID==selectedID)
-        webSocketInfo.intComputadoras(lab.idLaboratorio);
-      else 
-        webSocketInfo.intComputadorasFuture(lab.idLaboratorio, horasId[0]);
-    }
+    //  print('fin for eche');
     start = false;
+    subscription = webSocketInfo.reservarStream.listen((event) {
+      print('hubo un cambien en tu reserva');
+      if (!webSocketInfo.reservaCompu && seleccionada != -1) seleccionada = -1;
+    });
     return Scaffold(
         appBar: AppBar(
           backgroundColor: mainColor,
           elevation: 0.0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+              icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                prefs.paginaActual = 'Laboratorios_page';
+                Navigator.of(context).pop();
+              }),
           title: Text("Elegir computadora"),
         ),
         body: Stack(
           children: <Widget>[
             _fondo(),
             _contenido(),
-            (seleccionada != -1 && !webSocketInfo.reserva.ok)
-                ? boton(context,1)
-                :(tipoUsu==2)? boton(context,2):empty()
+            (seleccionada != -1 && webSocketInfo.reservaCompu && webSocketInfo.reservaLab)
+                ? boton(context, 1)
+                : (tipoUsu == 2 &&
+                        seleccionada == -1 &&
+                        webSocketInfo.canReservaLab && webSocketInfo.reservaLab)
+                    ? boton(context, 2)
+                    : empty()
           ],
         ));
   }
@@ -167,22 +183,6 @@ class _ReservaPageState extends State<ReservaPage> {
               builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
                 if (snapshot.hasData) {
                   _computadoras = snapshot.data;
-                  if (seleccionada != -1) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_computadoras[seleccionada - 1].estado !=
-                          "Disponible")
-                        setState(() {
-                          seleccionada = -1;
-                        });
-                      if (visible && webSocketInfo.reserva.ok) setState(() {});
-                      if (webSocketInfo.reserva.ok && seleccionada != -1) {
-                        setState(() {
-                          seleccionada = -1;
-                        });
-                      }
-                    });
-                  }
-
                   return computadoras();
                 } else {
                   return Column(
@@ -315,9 +315,10 @@ class _ReservaPageState extends State<ReservaPage> {
   }
 
   Widget compu({id: 0}) {
-    print(' $id ${_computadoras[id - 1].estado}');
     Color myestado;
+
     String ed = _computadoras[id - 1].estado;
+    //print('${id-1} $ed');
     if (seleccionada == id && ed == "Disponible") {
       myestado = ed1;
       ed = "Seleccionada";
@@ -343,7 +344,7 @@ class _ReservaPageState extends State<ReservaPage> {
         behavior: HitTestBehavior.translucent,
         onTap: () {
           if ((ed == "Seleccionada" || ed == "Disponible") &&
-              !webSocketInfo.reserva.ok) {
+              webSocketInfo.reservaCompu) {
             if (seleccionada == id)
               seleccionada = -1;
             else
@@ -437,16 +438,34 @@ class _ReservaPageState extends State<ReservaPage> {
   }
 
   Widget horizontal2() {
-    return Container(
-      height: 60.0,
-      child: PageView(
-        pageSnapping: false,
-        controller: PageController(initialPage: 1, viewportFraction: 0.35),
-        children: _tarjetas(),
-      ),
-    );
+    webSocketInfo.intServer();
+    return StreamBuilder(
+        stream: webSocketInfo.serverStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Container(
+              height: 60.0,
+              child: PageView(
+                pageSnapping: false,
+                controller:
+                    PageController(initialPage: 1, viewportFraction: 0.35),
+                children: _tarjetas(),
+              ),
+            );
+          } else
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                SpinKitDoubleBounce(
+                  color: ed1,
+                  size: 50.0,
+                )
+              ],
+            );
+        });
   }
 
+  void horasLibresfor() {}
   List<Widget> _tarjetas() {
     return horasLibres.map((hora) {
       return Container(
@@ -457,8 +476,9 @@ class _ReservaPageState extends State<ReservaPage> {
               setState(() {
                 selected = hora;
                 selectedID = horasId[horasLibres.indexOf(selected)];
-                if (lab.estado == "Tiempo libre" &&
-                    horasLibres.indexOf(selected) == 0)
+                webSocketInfo.computadorasSink(null);
+                print('${lab.estado == "Tiempo libre"} - ${horasLibres.indexOf(selected) == 0}');
+                if (lab.estado == "Tiempo libre" && horasLibres.indexOf(selected) == 0)
                   webSocketInfo.intComputadoras(lab.idLaboratorio);
                 else
                   webSocketInfo.intComputadorasFuture(
@@ -487,15 +507,15 @@ class _ReservaPageState extends State<ReservaPage> {
     }).toList();
   }
 
-  Widget boton(BuildContext context,int t) {
+  Widget boton(BuildContext context, int t) {
     visible = true;
     return Positioned(
       bottom: 0.0,
-      right: (t==1)?0.0:null,
-      left: (t==1)?null:0.0,
+      right: (t == 1) ? 0.0 : null,
+      left: (t == 1) ? null : 0.0,
       child: GestureDetector(
         onTap: () async {
-          if (seleccionada == -1 && tipoUsu==1) return null;
+          if (seleccionada == -1 && tipoUsu == 1) return null;
           var datos = new Map();
           Intl.defaultLocale = 'es';
           String date;
@@ -505,20 +525,24 @@ class _ReservaPageState extends State<ReservaPage> {
           datos['lab'] = lab.idLaboratorio;
           datos['fecha'] = date;
           datos['hora'] = selected;
-          datos['compu'] = (tipoUsu==2 && seleccionada==-1)?"Todas":seleccionada;
+          datos['compu'] =
+              (tipoUsu == 2 && seleccionada == -1) ? "Todas" : seleccionada;
           datos['boleta'] = value;
           datos['horaId'] = selectedID;
-          datos['tipoUsu']=tipoUsu;
+          datos['tipoUsu'] = tipoUsu;
           if (datos['compu'] == -1) return null;
           seleccionada = -1;
+          prefs.paginaActual = 'booking_page';
           Navigator.pushNamed(context, 'booking', arguments: datos);
         },
         child: Container(
-          width: (t==1)?140.0:120.0,
+          width: (t == 1) ? 140.0 : 120.0,
           height: 70.0,
           decoration: BoxDecoration(
             color: Color.fromRGBO(13, 8, 70, 1.0),
-            borderRadius: (t==1)?BorderRadius.only(topLeft: Radius.circular(30.0)):BorderRadius.only(topRight: Radius.circular(30.0)),
+            borderRadius: (t == 1)
+                ? BorderRadius.only(topLeft: Radius.circular(30.0))
+                : BorderRadius.only(topRight: Radius.circular(30.0)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -534,10 +558,8 @@ class _ReservaPageState extends State<ReservaPage> {
                         fontSize: 16.0),
                   ),
                   Text(
-                    (t==1)?'computadora':'laboratorio',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.0),
+                    (t == 1) ? 'computadora' : 'laboratorio',
+                    style: TextStyle(color: Colors.white, fontSize: 14.0),
                   ),
                 ],
               ),

@@ -42,33 +42,48 @@ class _RegistrarSalidaPageState extends State<RegistrarSalidaPage> {
   }
 
   Widget _contenido() {
-    return Center(
-      child: SingleChildScrollView(
-          child: StreamBuilder(
-        stream: webSocketInfo.reservarStream,
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          if (snapshot.hasData) return _card(snapshot.data);
-          return SpinKitDoubleBounce(
-            color: Color.fromRGBO(1, 127, 255, 1.0),
-            size: 50.0,
+    return StreamBuilder(
+      stream: webSocketInfo.reservarStream,
+      builder: (BuildContext context, AsyncSnapshot<List> snapshot) {
+        if (snapshot.hasData) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              if (snapshot.data.length == 0)
+                fondoColor = Colors.white;
+              else
+                fondoColor = Color.fromRGBO(92, 124, 250, 1.0);
+            });
+          });
+          if (snapshot.data.length == 0)
+            return Center(
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _reservaEmpty(),
+              ],
+            ));
+          return ListView.builder(
+            itemCount: snapshot.data.length,
+            itemBuilder: (BuildContext context, int i) {
+              return _reservaCard(snapshot.data[i]);
+            },
+            padding: EdgeInsets.all(20.0),
           );
-        },
-      )),
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+           setState(() {
+        fondoColor = Colors.white;
+          });
+          });
+        return SpinKitDoubleBounce(
+          color: Color.fromRGBO(1, 127, 255, 1.0),
+          size: 50.0,
+        );
+      },
     );
   }
 
-  Widget _card(Reserva res) {
-    if (res.ok) return _reservaCard(res);
-    return _reservaEmpty();
-  }
-
   Widget _reservaEmpty() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        fondoColor = Colors.white;
-      });
-    });
-
     return Column(
       children: <Widget>[
         Container(
@@ -88,12 +103,6 @@ class _RegistrarSalidaPageState extends State<RegistrarSalidaPage> {
   }
 
   Widget _reservaCard(Reserva reserva) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        fondoColor = Color.fromRGBO(92, 124, 250, 1.0);
-      });
-    });
-
     return Container(
       width: tam.width * 0.9,
       height: 210.0,
@@ -122,7 +131,7 @@ class _RegistrarSalidaPageState extends State<RegistrarSalidaPage> {
                       height: 5.0,
                     ),
                     Text(
-                      '${reserva.idComputadora}',
+                      (reserva.idComputadora==-2)?'Todas':'${reserva.idComputadora}',
                       style: TextStyle(fontSize: 16.0),
                     )
                   ],
@@ -146,7 +155,7 @@ class _RegistrarSalidaPageState extends State<RegistrarSalidaPage> {
                       dateInfo(reserva.fecha),
                       horaInfo(reserva.horaS),
                       esteInfo(reserva.estado),
-                      _boton(),
+                      _boton(reserva.estado,reserva.tipo),
                     ],
                   ),
                 ),
@@ -224,9 +233,9 @@ class _RegistrarSalidaPageState extends State<RegistrarSalidaPage> {
     );
   }
 
-  Widget _boton() {
+  Widget _boton(String estado,int tipo) {
     return GestureDetector(
-      onTap: () => _send(),
+      onTap: () => _send(estado,tipo),
       child: Container(
         width: 150.0,
         height: 30.0,
@@ -234,7 +243,7 @@ class _RegistrarSalidaPageState extends State<RegistrarSalidaPage> {
             color: Colors.white, borderRadius: BorderRadius.circular(5.0)),
         child: Center(
             child: Text(
-          'Cancelar reserva',
+          (estado=="En espera")?'Cancelar reserva':'Finalizar reserva',
           style: TextStyle(
               fontSize: 16.0, color: Color.fromRGBO(92, 124, 250, 1.0)),
         )),
@@ -242,7 +251,14 @@ class _RegistrarSalidaPageState extends State<RegistrarSalidaPage> {
     );
   }
 
-  void _send() {
-    usuarioProvider.cancelarReserva();
+  void _send(String estado,int tipo) {
+    if(estado=="En espera")
+    {
+      if(tipo==1)
+        usuarioProvider.cancelarReservaComputadora();
+      else
+       usuarioProvider.cancelarReservaLaboratorio();
+    }
+    
   }
 }

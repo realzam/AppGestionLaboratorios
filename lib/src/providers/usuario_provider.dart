@@ -90,7 +90,7 @@ class UsuarioProvider {
     
     
   }
-  Future<dynamic> reservarLaboratorio(int compu,int lab,int hora) async {
+  Future<dynamic> reservarLaboratorio(int lab,int hora) async {
     String usu = await storage.read(key: 'numUsuario');
     final url = '$_url/reservaLaboratorio';
     final authdata = {
@@ -119,9 +119,20 @@ class UsuarioProvider {
     else
     return {'status': decodeResp['status']}; 
   }
-   Future<dynamic> cancelarReserva() async {
+   Future<dynamic> cancelarReservaComputadora() async {
     String usu = await storage.read(key: 'numUsuario');
-    final url = '$_url/cancelarReserva/$usu';
+    final url = '$_url/cancelarReserva/computadora/$usu';
+     final res= await http.put(url);
+    Map<String, dynamic> decodeResp = json.decode(res.body);
+    print(decodeResp);
+    if(decodeResp['status']==0)
+    return {'status': decodeResp['status'],'info':decodeResp['info']};
+    else
+    return {'status': decodeResp['status']}; 
+  }
+  Future<dynamic> cancelarReservaLaboratorio() async {
+    String usu = await storage.read(key: 'numUsuario');
+    final url = '$_url/cancelarReserva/laboratorio/$usu';
      final res= await http.put(url);
     Map<String, dynamic> decodeResp = json.decode(res.body);
     print(decodeResp);

@@ -1,9 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class PreferenciasUsuario {
-
-  static final PreferenciasUsuario _instancia = new PreferenciasUsuario._internal();
+  static final PreferenciasUsuario _instancia =
+      new PreferenciasUsuario._internal();
 
   factory PreferenciasUsuario() {
     return _instancia;
@@ -16,8 +15,8 @@ class PreferenciasUsuario {
   initPrefs() async {
     this._prefs = await SharedPreferences.getInstance();
   }
-  
-  void clear(){
+
+  void clear() {
     _prefs.clear();
   }
 
@@ -26,35 +25,42 @@ class PreferenciasUsuario {
     return _prefs.getString('token') ?? '';
   }
 
-  set token( String value ) {
+  set token(String value) {
     _prefs.setString('token', value);
   }
-  
+
   get recordarme {
     return _prefs.getBool('recordarme') ?? false;
   }
 
-  set recordarme( bool value ) {
+  set recordarme(bool value) {
     _prefs.setBool('recordarme', value);
   }
-
-
 
   // GET y SET de la última página
   get pagina {
     return _prefs.getString('pagina') ?? 'ingreso';
   }
 
-  set pagina( String value ) {
+  set pagina(String value) {
     _prefs.setString('pagina', value);
   }
-  
+
+  get paginaActual {
+    return _prefs.getString('paginaActual') ?? '';
+  }
+
+  set paginaActual(String value) {
+    print('================== pgina actual ============');
+    print(value);
+    _prefs.setString('paginaActual', value);
+  }
 
   get numUser {
     return _prefs.getString('numUser') ?? '';
   }
 
-  set numUser( String value ) {
+  set numUser(String value) {
     _prefs.setString('numUser', value);
   }
 
@@ -62,18 +68,15 @@ class PreferenciasUsuario {
     return _prefs.getString('ultimaPagina') ?? '';
   }
 
-  set ultimaPagina( String value ) {
+  set ultimaPagina(String value) {
     _prefs.setString('ultimaPagina', value);
   }
 
-  get formatHora{
+  get formatHora {
     return _prefs.getBool('formatHora') ?? false;
   }
 
-  set formatHora( bool value ) {
+  set formatHora(bool value) {
     _prefs.setBool('formatHora', value);
   }
-
-
 }
-

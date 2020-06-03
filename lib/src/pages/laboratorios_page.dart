@@ -7,17 +7,24 @@ import 'package:proyecto/src/providers/webSocketInformation.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class LaboratoriosPage extends StatelessWidget {
+  bool start = true;
   Size tam;
   final prefs = new PreferenciasUsuario();
+  WebSocketInfo webSocketInfo;
   @override
   Widget build(BuildContext context) {
+    if (start) {
+      webSocketInfo = Provider.of<WebSocketInfo>(context);
+      webSocketInfo.init();
+      prefs.paginaActual = 'Laboratorios_page';
+      start = false;
+    }
     TimeOfDay timeOfDay = TimeOfDay.fromDateTime(DateTime.now());
     String res = timeOfDay.format(context);
     bool is12HoursFormat = res.contains(new RegExp(r'[A-Z]'));
     prefs.formatHora = is12HoursFormat;
     tam = MediaQuery.of(context).size;
-    final webSocketInfo = Provider.of<WebSocketInfo>(context);
-    webSocketInfo.init();
+
     webSocketInfo.intServer();
     webSocketInfo.listenCompus = false;
     webSocketInfo.intLabs();
@@ -49,12 +56,17 @@ class LaboratoriosPage extends StatelessWidget {
     return Container(
       height: 100.0,
       child: GestureDetector(
-        onTap: () async{
+        onTap: () async {
+          if (l.estado == "No disponible") return null;
+          webSocketInfo.intComputadoras(l.idLaboratorio);
           final storage = new FlutterSecureStorage();
-          String t=await storage.read(key: 'tipo');
-          int tipo=int.parse(t);
-          List <dynamic> ar=[l,tipo];
+          String t = await storage.read(key: 'tipo');
+          int tipo = int.parse(t);
+          List<dynamic> ar = [l, tipo];
           //if(dia==6||dia==0||hora==0)return null;
+          webSocketInfo.listenCompus = true;
+          prefs.paginaActual = 'reserva_page';
+          webSocketInfo.intComputadoras(l.idLaboratorio);
           Navigator.pushNamed(context, "reservar", arguments: ar);
         },
         child: Card(
@@ -66,8 +78,11 @@ class LaboratoriosPage extends StatelessWidget {
               children: <Widget>[
                 Container(
                   decoration: new BoxDecoration(
-                      color:
-                          (l.estado == "En clase") ? Colors.red : Colors.green,
+                      color: (l.estado == "En clase")
+                          ? Colors.red
+                          : (l.estado == "No disponible")
+                              ? Colors.grey
+                              : Colors.green,
                       borderRadius: new BorderRadius.only(
                           topLeft: Radius.circular(15.0),
                           bottomLeft: Radius.circular(15.0))),

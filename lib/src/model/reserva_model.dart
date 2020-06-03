@@ -1,6 +1,18 @@
 import 'package:intl/intl.dart';
 import 'package:proyecto/src/model/hora_model.dart';
-import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
+
+class Reservas {
+  List<Reserva> items = new List();
+
+  Reservas();
+  Reservas.fromJsonList(List<dynamic> jsonList) {
+    if (jsonList == null) return;
+    for (var item in jsonList) {
+      final reserva = new Reserva.fromJson(item);
+      items.add(reserva);
+    }
+  }
+}
 
 class Reserva{
   bool ok;
@@ -12,11 +24,13 @@ class Reserva{
   int hora;
   DateTime fin;
   String estado;
+  int tipo;
 
   String horaS;
   String fecha;
 
 Reserva({
+  this.tipo,
     this.ok,
     this.idUsuario,
     this.idComputadora,
@@ -31,9 +45,10 @@ Reserva({
   });
 
     Reserva.fromJson(Map<String, dynamic> json) {
+      tipo           =  json['tipo'];
       ok             =  true;
       idUsuario      =  json['id_usuario'];
-      idComputadora  =  json['id_computadora'];
+      idComputadora  =  (json['tipo']==1)?json['id_computadora']:-2;
       idLaboratorio  =  json['id_laboratorio'];
       inicio         =  DateTime.parse(json['inicio']);
       dia            =  json['dia'];
