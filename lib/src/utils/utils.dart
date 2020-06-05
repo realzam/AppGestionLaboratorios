@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 bool isNumeric(String s)
 {
+  if(s==null) return false;
   if(s.isEmpty)return false;
   final n=num.tryParse(s);
   return (n==null)?false:true;
@@ -60,18 +61,18 @@ Future<ConfirmAction> asyncConfirmDialog(BuildContext context,String mensaje) as
     builder: (BuildContext context) {  
       return AlertDialog( 
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(32.0))), 
+            borderRadius: BorderRadius.all(Radius.circular(10.0))), 
         title: Text('Confirmar'),  
         content: Text(mensaje),  
         actions: <Widget>[  
           FlatButton(  
-            child: const Text('Confirmar'),  
+            child: const Text('Si'),  
             onPressed: () {  
               Navigator.of(context).pop(ConfirmAction.Accept);  
             },  
           ),  
           FlatButton(  
-            child: const Text('Cancelar'),  
+            child: const Text('No'),  
             onPressed: () {  
               Navigator.of(context).pop(ConfirmAction.Cancel);  
             },  

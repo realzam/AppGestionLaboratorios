@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
 import 'package:proyecto/src/providers/usuario_provider.dart';
+import 'package:proyecto/src/providers/webSocketInformation.dart';
 import 'package:proyecto/src/utils/utils.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:argon_buttons_flutter/argon_buttons_flutter.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class IngresoPage extends StatefulWidget {
   @override
@@ -13,17 +16,19 @@ class IngresoPage extends StatefulWidget {
 }
 
 class _IngresoPageState extends State<IngresoPage> {
+  final storage = new FlutterSecureStorage();
+  final usuarioProvider = new UsuarioProvider();
+  final formKey = GlobalKey<FormState>();
+  final prefs = new PreferenciasUsuario();
   Color mainColor = Color.fromRGBO(1, 127, 255, 1.0);
   Color secondColor = Color.fromRGBO(0, 102, 151, 1.0);
-
   bool passwordVisible = false;
-  final usuarioProvider = new UsuarioProvider();
-  final prefs = new PreferenciasUsuario();
-  final formKey = GlobalKey<FormState>();
   String pass = '';
   String numUs;
+  WebSocketInfo webSocketInfo;
   @override
   Widget build(BuildContext context) {
+    webSocketInfo = Provider.of<WebSocketInfo>(context);
     TimeOfDay timeOfDay = TimeOfDay.fromDateTime(DateTime.now());
     String res = timeOfDay.format(context);
     bool is12HoursFormat = res.contains(new RegExp(r'[A-Z]'));
@@ -164,7 +169,8 @@ class _IngresoPageState extends State<IngresoPage> {
         decoration: InputDecoration(
           suffixIcon: IconButton(
               icon: Icon(
-                  passwordVisible ? Icons.visibility : Icons.visibility_off,color: mainColor),
+                  passwordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: mainColor),
               onPressed: () {
                 setState(() {
                   passwordVisible = !passwordVisible;
@@ -200,33 +206,31 @@ class _IngresoPageState extends State<IngresoPage> {
       textColor: Colors.white,
       onPressed: _submit,
     );*/
-      return ArgonButton(
-              height: 50,
-              roundLoadingShape: true,
-              width: MediaQuery.of(context).size.width * 0.45,
-              onTap: (startLoading, stopLoading, btnState) {
-                if (btnState == ButtonState.Idle) {
-                  startLoading();
-                  _submit(stopLoading);
-                }
-              },
-              child: Text(
-                "Ingresar",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700),
-              ),
-              loader: Container(
-                padding: EdgeInsets.all(10),
-                child: SpinKitRotatingCircle(
-                  color: Colors.white,
-                  // size: loaderWidth ,
-                ),
-              ),
-              borderRadius: 5.0,
-              color: secondColor,
-            );
+    return ArgonButton(
+      height: 50,
+      roundLoadingShape: true,
+      width: MediaQuery.of(context).size.width * 0.45,
+      onTap: (startLoading, stopLoading, btnState) {
+        if (btnState == ButtonState.Idle) {
+          startLoading();
+          _submit(stopLoading);
+        }
+      },
+      child: Text(
+        "Ingresar",
+        style: TextStyle(
+            color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+      ),
+      loader: Container(
+        padding: EdgeInsets.all(10),
+        child: SpinKitRotatingCircle(
+          color: Colors.white,
+          // size: loaderWidth ,
+        ),
+      ),
+      borderRadius: 5.0,
+      color: secondColor,
+    );
   }
 
   Widget goFast(BuildContext context) {
@@ -256,10 +260,15 @@ class _IngresoPageState extends State<IngresoPage> {
       } else {
         prefs.pagina = 'ingreso';
       }
-           await new Future.delayed(const Duration(milliseconds: 500));
+      await webSocketInfo.init();
+      await new Future.delayed(const Duration(milliseconds: 500));
       stop();
-      await new Future.delayed(const Duration(milliseconds: 100));
-      Navigator.pushReplacementNamed(context, 'home');
+      await new Future.delayed(const Duration(milliseconds: 460));
+      String usu = await storage.read(key: 'tipo');
+      if (usu == "3")
+        Navigator.pushReplacementNamed(context, 'home2');
+      else
+        Navigator.pushReplacementNamed(context, 'home');
     } else {
       stop();
       mostrarAlerta(context, info['mensaje']);
@@ -317,13 +326,19 @@ class _IngresoPageState extends State<IngresoPage> {
           ),
           child: Column(
             children: <Widget>[
-              Icon(Icons.person_pin_circle, color: Colors.white, size: 100.0),
+              Container(
+                  width: size.width * 0.35,
+                  height: size.width * 0.35,
+                  child: Image(
+                    image: AssetImage('assets/icon.png'),
+                    fit: BoxFit.contain,
+                  )),
               SizedBox(
                 height: 10.0,
                 width: double.infinity,
               ),
               Text(
-                'control com',
+                'Control laboratorios',
                 style: TextStyle(color: Colors.white, fontSize: 25.0),
               )
             ],

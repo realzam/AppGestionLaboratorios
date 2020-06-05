@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:proyecto/src/bloc/provider.dart';
 import 'package:proyecto/src/pages/booking_page.dart';
 import 'package:proyecto/src/pages/home_page.dart';
+import 'package:proyecto/src/pages/home2_page.dart';
 import 'package:proyecto/src/pages/laboratorios_page.dart';
 import 'package:proyecto/src/pages/push_notification_page.dart';
 import 'package:proyecto/src/pages/registro_salida_page.dart';
@@ -13,6 +14,7 @@ import 'package:proyecto/src/pages/registro_page.dart';
 import 'package:proyecto/src/pages/fast_ingreso_page.dart';
 import 'package:proyecto/src/pages/mensaje_page.dart';
 import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
+import 'package:proyecto/src/providers/agregarUsuarioInfo.dart';
 import 'package:proyecto/src/providers/horarioInfo.dart';
 import 'package:proyecto/src/providers/laboratoriosInfo.dart';
 import 'package:proyecto/src/providers/push_notification_provider.dart';
@@ -60,6 +62,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => WebSocketInfo()),
         ChangeNotifierProvider(create: (_) => LaboratoriosInfo()),
         ChangeNotifierProvider(create: (_) => HorarioInfo()),
+        ChangeNotifierProvider(create: (_) => AgregarUsuarioInfo())
       ],
       child: ProviderBloc(
           child: MaterialApp(
@@ -78,6 +81,7 @@ class _MyAppState extends State<MyApp> {
           'laboratorios': (BuildContext context) => LaboratoriosPage(),
           'booking': (BuildContext context) => BookingPage(),
           'reservacion': (BuildContext context) => RegistrarSalidaPage(),
+          'home2':(BuildContext context) =>HomePageAdministrador(),
         },
         theme: ThemeData(primaryColor: Colors.deepPurple),
       )),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
 import 'package:proyecto/src/providers/usuario_provider.dart';
+import 'package:proyecto/src/providers/webSocketInformation.dart';
 import 'package:proyecto/src/utils/utils.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -21,8 +23,11 @@ class _FastLoginPageState extends State<FastLoginPage> {
   final usuarioProvider = new UsuarioProvider();
   final prefs = new PreferenciasUsuario();
   final formKey = GlobalKey<FormState>();
+  WebSocketInfo webSocketInfo;
   @override
   Widget build(BuildContext context) {
+
+     webSocketInfo = Provider.of<WebSocketInfo>(context);
     TimeOfDay timeOfDay = TimeOfDay.fromDateTime(DateTime.now());
     String res = timeOfDay.format(context);
     bool is12HoursFormat = res.contains(new RegExp(r'[A-Z]'));
@@ -124,33 +129,31 @@ class _FastLoginPageState extends State<FastLoginPage> {
       textColor: Colors.white,
       onPressed: _submit,
     );*/
-        return ArgonButton(
-              height: 50,
-              roundLoadingShape: true,
-              width: MediaQuery.of(context).size.width * 0.45,
-              onTap: (startLoading, stopLoading, btnState) {
-                if (btnState == ButtonState.Idle) {
-                  startLoading();
-                  _submit(stopLoading);
-                }
-              },
-              child: Text(
-                "Ingresar",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700),
-              ),
-              loader: Container(
-                padding: EdgeInsets.all(10),
-                child: SpinKitRotatingCircle(
-                  color: Colors.white,
-                  // size: loaderWidth ,
-                ),
-              ),
-              borderRadius: 5.0,
-              color: secondColor,
-            );
+    return ArgonButton(
+      height: 50,
+      roundLoadingShape: true,
+      width: MediaQuery.of(context).size.width * 0.45,
+      onTap: (startLoading, stopLoading, btnState) {
+        if (btnState == ButtonState.Idle) {
+          startLoading();
+          _submit(stopLoading);
+        }
+      },
+      child: Text(
+        "Ingresar",
+        style: TextStyle(
+            color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+      ),
+      loader: Container(
+        padding: EdgeInsets.all(10),
+        child: SpinKitRotatingCircle(
+          color: Colors.white,
+          // size: loaderWidth ,
+        ),
+      ),
+      borderRadius: 5.0,
+      color: secondColor,
+    );
   }
 
   void _submit(Function stop) async {
@@ -163,10 +166,16 @@ class _FastLoginPageState extends State<FastLoginPage> {
       } else {
         prefs.pagina = 'ingreso';
       }
+      await webSocketInfo.init();
       await new Future.delayed(const Duration(milliseconds: 500));
       stop();
-    await new Future.delayed(const Duration(milliseconds: 100));
-      Navigator.pushReplacementNamed(context, 'home');
+      await new Future.delayed(const Duration(milliseconds: 460));
+      String usu = await storage.read(key: 'tipo');
+      if (usu == "3")
+        Navigator.pushReplacementNamed(context, 'home2');
+      else {
+        Navigator.pushReplacementNamed(context, 'home');
+      }
     } else {
       mostrarAlerta(context, info['mensaje']);
     }
@@ -223,13 +232,19 @@ class _FastLoginPageState extends State<FastLoginPage> {
           ),
           child: Column(
             children: <Widget>[
-              Icon(Icons.person_pin_circle, color: Colors.white, size: 100.0),
+              Container(
+                  width: size.width * 0.35,
+                  height: size.width * 0.35,
+                  child: Image(
+                    image: AssetImage('assets/icon.png'),
+                    fit: BoxFit.contain,
+                  )),
               SizedBox(
-                height: 10.0,
+                height: 15.0,
                 width: double.infinity,
               ),
               Text(
-                'control com',
+                'Control laboratorios',
                 style: TextStyle(color: Colors.white, fontSize: 25.0),
               )
             ],

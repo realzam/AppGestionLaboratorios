@@ -17,28 +17,27 @@ class _BookingPageState extends State<BookingPage> {
   Widget _hijo;
   double _height;
   double _width;
-  bool start=true;
-  bool visible=true;
-  bool load=false;
+  bool start = true;
+  bool visible = true;
+  bool load = false;
   final usuarioProvider = new UsuarioProvider();
   StreamSubscription subscription;
-   WebSocketInfo webSocketInfo = new WebSocketInfo();
+  WebSocketInfo webSocketInfo = new WebSocketInfo();
 
   @override
   Widget build(BuildContext context) {
     datos = ModalRoute.of(context).settings.arguments;
     tam = MediaQuery.of(context).size;
-    
-if(start)
-{
-  webSocketInfo = Provider.of<WebSocketInfo>(context);
-_cambiarHijo(null);
-start=false;
-}
+
+    if (start) {
+      webSocketInfo = Provider.of<WebSocketInfo>(context);
+      _cambiarHijo(null);
+      start = false;
+    }
 
     subscription = webSocketInfo.reservarStream.listen((event) {
-        print('hubo un cambien en tu reserva');
-      });
+      print('hubo un cambien en tu reserva');
+    });
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color.fromRGBO(1, 127, 255, 1.0),
@@ -46,20 +45,19 @@ start=false;
         leading: IconButton(
             icon: Icon(Icons.arrow_back_ios, color: Colors.white),
             onPressed: () {
-              if(_index==0 || _index==1)
-              {
-                Navigator.pushNamed(context, 'home',arguments: 2);
-                }else{
+              if (_index == 0 || _index == 1) {
+                Navigator.pushNamed(context, 'home', arguments: 2);
+              } else {
                 Navigator.pop(context);
               }
-            }), 
+            }),
         title: Text("Confirmar reserva"),
       ),
       body: Stack(
         children: <Widget>[
           _fondo(),
           _contenido(),
-          (visible)?boton(context):Container(),
+          (visible) ? boton(context) : Container(),
         ],
       ),
     );
@@ -78,16 +76,16 @@ start=false;
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-              AnimatedContainer(
-                duration: Duration(seconds: 1),
-                curve: Curves.fastOutSlowIn,
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(17.0)),
-                height: _height,
-                width: _width,
-                child: _hijo,
-              ),
+            AnimatedContainer(
+              duration: Duration(seconds: 1),
+              curve: Curves.fastOutSlowIn,
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(17.0)),
+              height: _height,
+              width: _width,
+              child: _hijo,
+            ),
           ],
         ),
       ),
@@ -126,15 +124,24 @@ start=false;
   }
 
   Widget bottomCard() {
-    return Padding(
-      padding: EdgeInsets.only(left: 15.0),
-      child: Container(
-        color: Colors.white,
-        height: (tam.height * 0.65) - 100.3,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: <Widget>[locationInfo(), dateInfo(),horaInfo(), myInfo()],
-        ),
+    return Container(
+      decoration: new BoxDecoration(
+          color: Colors.white,
+          borderRadius: new BorderRadius.only(
+              bottomLeft: Radius.circular(17.0), bottomRight: Radius.circular(17.0))),
+      height: (tam.height * 0.65) - 100.3,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: <Widget>[Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: locationInfo(),
+        ), Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: dateInfo(),
+        ), Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: horaInfo(),
+        ), myInfo()],
       ),
     );
   }
@@ -170,7 +177,8 @@ start=false;
       ],
     );
   }
-    Widget horaInfo() {
+
+  Widget horaInfo() {
     return Row(
       children: <Widget>[
         FaIcon(FontAwesomeIcons.clock,
@@ -187,7 +195,10 @@ start=false;
   }
 
   Widget myInfo() {
-    return Row(
+    return Wrap(
+      direction: Axis.horizontal,
+      spacing: 0.0,
+      runSpacing: 5.0,
       children: <Widget>[
         computadoreInfo(),
         SizedBox(
@@ -282,132 +293,135 @@ start=false;
   }
 
   void _submit(BuildContext context, Map datos) async {
-    if(!load)
-    {
-      load=true;
+    if (!load) {
+      load = true;
       Map info;
-      if(datos['compu']!="Todas" && datos['compu']!=-1 && webSocketInfo.reservaCompu)
-        info =await usuarioProvider.reservarComputadora(datos['compu'], datos['lab'], datos['horaId']);
-      else if(datos['compu']=="Todas" && datos['tipoUsu']==2 && webSocketInfo.canReservaLab)
-        info =await usuarioProvider.reservarLaboratorio(datos['lab'], datos['horaId']);
+      if (datos['compu'] != "Todas" &&
+          datos['compu'] != -1 &&
+          webSocketInfo.reservaCompu)
+        info = await usuarioProvider.reservarComputadora(
+            datos['compu'], datos['lab'], datos['horaId']);
+      else if (datos['compu'] == "Todas" &&
+          datos['tipoUsu'] == 2 &&
+          webSocketInfo.canReservaLab)
+        info = await usuarioProvider.reservarLaboratorio(
+            datos['lab'], datos['horaId']);
 
-      _index=info['status'];
-    _cambiarHijo(info['mensaje']);
-    load=false;
+      _index = info['status'];
+      _cambiarHijo(info['mensaje']);
+      load = false;
     }
-    
-    
   }
 
-
-
   void _cambiarHijo(String mensaje) {
-   
-      print('cambiar hijo$_index');
-      if(_index!=-1)
-      {
-        visible=false;
-      }
+    print('cambiar hijo$_index');
+    if (_index != -1) {
+      visible = false;
+    }
 
-      if (_index == -1) {
-        _height = tam.height * 0.65;
-        _width = tam.width * 0.8;
-        _hijo = Column(
+    if (_index == -1) {
+      _height = tam.height * 0.65;
+      _width = tam.width * 0.8;
+      _hijo = Column(
+        children: <Widget>[
+          SizedBox(
+            height: 0.3,
+          ),
+          topCard(),
+          bottomCard()
+        ],
+      );
+    } else if (_index == 0) {
+      _height = 200.0;
+      _width = 200.0;
+      _hijo = Container(
+        decoration: BoxDecoration(
+            color: Color.fromRGBO(173, 222, 184, 1.0),
+            borderRadius: BorderRadius.circular(17.0)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            SizedBox(
-              height: 0.3,
+            Icon(
+              FontAwesomeIcons.check,
+              color: Color.fromRGBO(21, 87, 36, 1.0),
+              size: 30.0,
             ),
-            topCard(),
-            bottomCard()
-          ],
-        );
-      } else if (_index == 0) {
-        _height = 200.0;
-        _width = 200.0;
-        _hijo = Container(
-          decoration: BoxDecoration(
-              color: Color.fromRGBO(173, 222, 184, 1.0),
-              borderRadius: BorderRadius.circular(17.0)),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                FontAwesomeIcons.check,
+            SizedBox(
+              height: 30.0,
+            ),
+            Text(
+              mensaje,
+              style: TextStyle(
                 color: Color.fromRGBO(21, 87, 36, 1.0),
-                size: 30.0,
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
               ),
-              SizedBox(height: 30.0,),
-              Text(
-                mensaje,
-                style: TextStyle(
-                  color: Color.fromRGBO(21, 87, 36, 1.0),
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                ),
-              )
-            ],
-          ),
-        );
-      }else if (_index==1){
-         _height = 200.0;
-        _width = 230.0;
-        _hijo = Container(
-          decoration: BoxDecoration(
-              color: Color.fromRGBO(226, 227, 229, 1.0),
-              borderRadius: BorderRadius.circular(17.0)),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                FontAwesomeIcons.exclamationCircle,
+            )
+          ],
+        ),
+      );
+    } else if (_index == 1) {
+      _height = 200.0;
+      _width = 230.0;
+      _hijo = Container(
+        decoration: BoxDecoration(
+            color: Color.fromRGBO(226, 227, 229, 1.0),
+            borderRadius: BorderRadius.circular(17.0)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              FontAwesomeIcons.exclamationCircle,
+              color: Color.fromRGBO(56, 61, 65, 1.0),
+              size: 30.0,
+            ),
+            SizedBox(
+              height: 30.0,
+            ),
+            Text(
+              mensaje,
+              style: TextStyle(
                 color: Color.fromRGBO(56, 61, 65, 1.0),
-                size: 30.0,
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
               ),
-              SizedBox(height: 30.0,),
-              Text(
-                mensaje,
-                style: TextStyle(
-                  
-                  color: Color.fromRGBO(56, 61, 65, 1.0),
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                ),
-              )
-            ],
-          ),
-        );
-      }else
-      {
-        _height = 190.0;
-        _width = 200.0;
-        _hijo = Container(
-          decoration: BoxDecoration(
-              color: Color.fromRGBO(245, 198, 203, 1.0),
-              borderRadius: BorderRadius.circular(17.0)),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Icon(
-                FontAwesomeIcons.times,
+            )
+          ],
+        ),
+      );
+    } else {
+      _height = 190.0;
+      _width = 200.0;
+      _hijo = Container(
+        decoration: BoxDecoration(
+            color: Color.fromRGBO(245, 198, 203, 1.0),
+            borderRadius: BorderRadius.circular(17.0)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              FontAwesomeIcons.times,
+              color: Color.fromRGBO(114, 28, 36, 1.0),
+              size: 30.0,
+            ),
+            SizedBox(
+              height: 30.0,
+            ),
+            Text(
+              mensaje,
+              style: TextStyle(
                 color: Color.fromRGBO(114, 28, 36, 1.0),
-                size: 30.0,
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2.0,
               ),
-              SizedBox(height: 30.0,),
-              Text(
-                mensaje,
-                style: TextStyle(
-                  color: Color.fromRGBO(114, 28, 36, 1.0),
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                ),
-              )
-            ],
-          ),
-        );
-      }
-     setState(() {});
+            )
+          ],
+        ),
+      );
+    }
+    setState(() {});
   }
 }

@@ -22,7 +22,9 @@ class UsuarioProvider {
       await storage.write(key: 'numUsuario', value: numUsuario.toString());
       await storage.write(key: 'password', value: password);
       await storage.write(key: 'tipo', value: decodeResp['type'].toString());
-      print('tipo de usario ${decodeResp['type']}');
+      if (decodeResp['type'] == 3)
+        await storage.write(
+            key: 'laboratorio', value: decodeResp['lab'].toString());
       setTokenNotification();
       if (_prefs.recordarme) {
         var aux = "";
@@ -40,38 +42,48 @@ class UsuarioProvider {
   }
 
   Future<Map<String, dynamic>> nuevoUsuario(
-      String numUsuario, String email, String password,String nombre,int type) async {
+      String numUsuario, String email, String password, String nombre, int type,
+      {int lab}) async {
     final numUiont = int.parse(numUsuario);
     print('num usu' + numUsuario);
     final url = '$_url/add/usuario/$type';
-    final authdata = {'id': numUiont, "correo": email, "password": password,"nombre":nombre};
+    final authdata = {
+      'id': numUiont,
+      "correo": email,
+      "password": password,
+      "nombre": nombre,
+      "lab": lab
+    };
     final uu = json.encode(authdata);
 
-    final res = await http.post(url, body: uu, headers: {'content-type': 'application/json'});
+    final res = await http
+        .post(url, body: uu, headers: {'content-type': 'application/json'});
 
     Map<String, dynamic> decodeResp = json.decode(res.body);
-    print(decodeResp);
+    //print(decodeResp);
     if (decodeResp.containsKey('status')) {
-      await storage.write(key: 'numUsuario', value: numUsuario.toString());
-      await storage.write(key: 'password', value: password);
-      setTokenNotification();
-      if (_prefs.recordarme) {
-        var aux = "";
-        for (var i = 0; i < numUsuario.length - 4; i++) {
-          aux = aux + "*";
+      /* if (type == 1) {
+        await storage.write(key: 'numUsuario', value: numUsuario.toString());
+        await storage.write(key: 'password', value: password);
+        await storage.write(key: 'tipo', value: type.toString());
+        setTokenNotification();
+        if (_prefs.recordarme) {
+          var aux = "";
+          for (var i = 0; i < numUsuario.length - 4; i++) {
+            aux = aux + "*";
+          }
+          _prefs.numUser = aux + numUsuario.substring(numUsuario.length - 4);
+        } else {
+          _prefs.numUser = "";
         }
-        _prefs.numUser = aux + numUsuario.substring(numUsuario.length - 4);
-      } else {
-        _prefs.numUser = "";
-      }
-
+      }*/
       return {'ok': true};
     } else {
       return {'ok': false, 'mensaje': decodeResp['error']};
     }
   }
 
-  Future<dynamic> reservarComputadora(int compu,int lab,int hora) async {
+  Future<dynamic> reservarComputadora(int compu, int lab, int hora) async {
     String usu = await storage.read(key: 'numUsuario');
     final url = '$_url/reservaComputadora';
     final authdata = {
@@ -82,65 +94,64 @@ class UsuarioProvider {
     };
     final uu = json.encode(authdata);
 
-    final res = await http.post(url, body: uu, headers: {'content-type': 'application/json'});
-        Map<String, dynamic> decodeResp = json.decode(res.body);
+    final res = await http
+        .post(url, body: uu, headers: {'content-type': 'application/json'});
+    Map<String, dynamic> decodeResp = json.decode(res.body);
     print(decodeResp);
-   
-    return {'status': decodeResp['status'], 'mensaje':decodeResp['message']};
-    
-    
+
+    return {'status': decodeResp['status'], 'mensaje': decodeResp['message']};
   }
-  Future<dynamic> reservarLaboratorio(int lab,int hora) async {
+
+  Future<dynamic> reservarLaboratorio(int lab, int hora) async {
     String usu = await storage.read(key: 'numUsuario');
     final url = '$_url/reservaLaboratorio';
-    final authdata = {
-      "usuario": int.parse(usu),
-      "lab": lab,
-      "hora": hora
-    };
+    final authdata = {"usuario": int.parse(usu), "lab": lab, "hora": hora};
     final uu = json.encode(authdata);
 
-    final res = await http.post(url, body: uu, headers: {'content-type': 'application/json'});
-        Map<String, dynamic> decodeResp = json.decode(res.body);
+    final res = await http
+        .post(url, body: uu, headers: {'content-type': 'application/json'});
+    Map<String, dynamic> decodeResp = json.decode(res.body);
     print(decodeResp);
-   
-    return {'status': decodeResp['status'], 'mensaje':decodeResp['message']};
-    
-    
+
+    return {'status': decodeResp['status'], 'mensaje': decodeResp['message']};
   }
+
   Future<dynamic> miReserva() async {
     String usu = await storage.read(key: 'numUsuario');
     final url = '$_url/miReserva/$usu';
-     final res= await http.get(url);
+    final res = await http.get(url);
     Map<String, dynamic> decodeResp = json.decode(res.body);
     print(decodeResp);
-    if(decodeResp['status']==0)
-    return {'status': decodeResp['status'],'info':decodeResp['info']};
+    if (decodeResp['status'] == 0)
+      return {'status': decodeResp['status'], 'info': decodeResp['info']};
     else
-    return {'status': decodeResp['status']}; 
+      return {'status': decodeResp['status']};
   }
-   Future<dynamic> cancelarReservaComputadora() async {
+
+  Future<dynamic> cancelarReservaComputadora() async {
     String usu = await storage.read(key: 'numUsuario');
     final url = '$_url/cancelarReserva/computadora/$usu';
-     final res= await http.put(url);
+    final res = await http.put(url);
     Map<String, dynamic> decodeResp = json.decode(res.body);
     print(decodeResp);
-    if(decodeResp['status']==0)
-    return {'status': decodeResp['status'],'info':decodeResp['info']};
+    if (decodeResp['status'] == 0)
+      return {'status': decodeResp['status'], 'info': decodeResp['info']};
     else
-    return {'status': decodeResp['status']}; 
+      return {'status': decodeResp['status']};
   }
+
   Future<dynamic> cancelarReservaLaboratorio() async {
     String usu = await storage.read(key: 'numUsuario');
     final url = '$_url/cancelarReserva/laboratorio/$usu';
-     final res= await http.put(url);
+    final res = await http.put(url);
     Map<String, dynamic> decodeResp = json.decode(res.body);
     print(decodeResp);
-    if(decodeResp['status']==0)
-    return {'status': decodeResp['status'],'info':decodeResp['info']};
+    if (decodeResp['status'] == 0)
+      return {'status': decodeResp['status'], 'info': decodeResp['info']};
     else
-    return {'status': decodeResp['status']}; 
+      return {'status': decodeResp['status']};
   }
+
   Future<dynamic> setTokenNotification() async {
     String usu = await storage.read(key: 'numUsuario');
     final url = '$_url/tokenNotification';
@@ -150,8 +161,32 @@ class UsuarioProvider {
     };
     final uu = json.encode(authdata);
 
-    final res = await http.post(url, body: uu, headers: {'content-type': 'application/json'});
-        Map<String, dynamic> decodeResp = json.decode(res.body);
-    print(decodeResp); 
+    final res = await http
+        .post(url, body: uu, headers: {'content-type': 'application/json'});
+    Map<String, dynamic> decodeResp = json.decode(res.body);
+    print(decodeResp);
+  }
+
+  Future<dynamic> setNextEdoReserva(int usuario, int tipoOperacion,
+      String estado, int hora, int lab, int computadora, int usarioTipo,{String observaciones:'Sin observaciones'}) async {
+
+    final url = '$_url/nextReserva';
+    final authdata = {
+      "usuario": usuario,
+      "tipoO": tipoOperacion,
+      "estado": estado,
+      "hora": hora,
+      "lab": lab,
+      "computadora": computadora,
+      "tipoUsuario": usarioTipo,
+      "observaciones":observaciones
+    };
+
+    final uu = json.encode(authdata);
+
+    final res = await http
+        .put(url, body: uu, headers: {'content-type': 'application/json'});
+    Map<String, dynamic> decodeResp = json.decode(res.body);
+      return {'status': decodeResp['status'], 'info': decodeResp['message']};
   }
 }

@@ -15,7 +15,7 @@ class LaboratoriosPage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (start) {
       webSocketInfo = Provider.of<WebSocketInfo>(context);
-      webSocketInfo.init();
+      //webSocketInfo.init();
       prefs.paginaActual = 'Laboratorios_page';
       start = false;
     }
@@ -53,6 +53,15 @@ class LaboratoriosPage extends StatelessWidget {
   }
 
   Widget cardLab(Laboratorio l, BuildContext context) {
+    Color lateralColor;
+    if (l.estado == "En clase")
+      lateralColor = Colors.red;
+    else if (l.estado == "No disponible")
+      lateralColor = Colors.grey;
+    else if (l.estado == "Reservado")
+      lateralColor = Color.fromRGBO(13, 83, 138, 1.0);
+    else
+      lateralColor = Colors.green;
     return Container(
       height: 100.0,
       child: GestureDetector(
@@ -78,11 +87,7 @@ class LaboratoriosPage extends StatelessWidget {
               children: <Widget>[
                 Container(
                   decoration: new BoxDecoration(
-                      color: (l.estado == "En clase")
-                          ? Colors.red
-                          : (l.estado == "No disponible")
-                              ? Colors.grey
-                              : Colors.green,
+                      color:lateralColor,
                       borderRadius: new BorderRadius.only(
                           topLeft: Radius.circular(15.0),
                           bottomLeft: Radius.circular(15.0))),
