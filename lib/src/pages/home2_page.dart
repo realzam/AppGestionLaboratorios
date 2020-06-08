@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hidden_drawer_menu/hidden_drawer/hidden_drawer_menu.dart';
 import 'package:proyecto/src/pages/agregar_usuario_page.dart';
 import 'package:proyecto/src/pages/horarios_page.dart';
+import 'package:proyecto/src/pages/reportes_page.dart';
 import 'package:proyecto/src/pages/reservas_admin_page.dart';
 import 'package:proyecto/src/pages/registro_salida_page.dart';
 import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
@@ -48,12 +49,12 @@ items.add(new ScreenHiddenDrawer(
 
     items.add(new ScreenHiddenDrawer(
         new ItemHiddenMenu(
-          name: "Registros",
+          name: "Reportes",
           baseStyle:
               TextStyle(color: Colors.white.withOpacity(0.8), fontSize: sizeFont),
           colorLineSelected: Colors.blue,
         ),
-        RegistrarSalidaPage()));
+        ReportesPage()));
     items.add(new ScreenHiddenDrawer(
         new ItemHiddenMenu(
           onTap: () {

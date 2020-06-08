@@ -33,7 +33,7 @@ class _AlumnosReservaTabState extends State<AlumnosReservaTab> {
       webSocketInfo.initReservasAdmin(1);
       webSocketInfo.intServer();
       fondoColor = Colors.white;
-      start=false;
+      start = false;
     }
 
     tam = MediaQuery.of(context).size;
@@ -66,7 +66,14 @@ class _AlumnosReservaTabState extends State<AlumnosReservaTab> {
               });
             });
           }
-          if (snapshot.data.length == 0)
+          if (snapshot.data.length == 0) {
+            if (fondoColor != Colors.white) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                setState(() {
+                    fondoColor = Colors.white;
+                });
+              });
+            }
             return Center(
                 child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -74,6 +81,8 @@ class _AlumnosReservaTabState extends State<AlumnosReservaTab> {
                 _reservaEmpty(),
               ],
             ));
+          }
+
           return ListView.builder(
             itemCount: snapshot.data.length,
             itemBuilder: (BuildContext context, int i) {
@@ -268,7 +277,8 @@ class _AlumnosReservaTabState extends State<AlumnosReservaTab> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(5.0)),
                   child: Center(
-                      child: Text('Comfirmar reserva',
+                      child: Text(
+                    'Confirmar reserva',
                     style: TextStyle(
                         fontSize: 16.0,
                         color: Color.fromRGBO(92, 124, 250, 1.0)),
@@ -276,7 +286,6 @@ class _AlumnosReservaTabState extends State<AlumnosReservaTab> {
                 ),
               );
             } else
-              
               return Container();
           }
           webSocketInfo.intServer();
@@ -289,11 +298,14 @@ class _AlumnosReservaTabState extends State<AlumnosReservaTab> {
         await asyncConfirmDialog(context, 'Confirmar registro');
     print('accion $action');
     if (action == ConfirmAction.Accept) {
-     final res=await usuarioProvider.setNextEdoReserva(r.idUsuario, 1, r.estado, r.hora, r.idLaboratorio, r.idComputadora, r.tipoUsuario);
-     
-     SnackBar mySnackBar = SnackBar(content: Text(res['info']));
-     Scaffold.of(context).showSnackBar(mySnackBar);
+      final res = await usuarioProvider.setNextEdoReserva(r.idUsuario, 1,
+          r.estado, r.hora, r.idLaboratorio, r.idComputadora, r.tipoUsuario);
 
+      SnackBar mySnackBar = SnackBar(
+        content: Text(res['info']),
+        duration: Duration(seconds: 3),
+      );
+      Scaffold.of(context).showSnackBar(mySnackBar);
     }
   }
 }

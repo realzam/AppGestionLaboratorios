@@ -6,6 +6,7 @@ import 'package:proyecto/src/model/computadora_model.dart';
 import 'package:proyecto/src/model/laboratorio_model.dart';
 import 'package:proyecto/src/model/reserva_model.dart';
 import 'package:proyecto/src/model/reserva_admin_model.dart';
+import 'package:proyecto/src/model/reserva_reporte_model.dart';
 import 'package:proyecto/src/model/server_model.dart';
 import 'package:proyecto/src/preferencias_usuario/preferencias_usuario.dart';
 
@@ -27,8 +28,14 @@ class WebSocketInfo with ChangeNotifier {
   int _lastHora;
   int _tipo;
   int _lastTipo;
+  int _lastTipoReporte;
+  int _lastTimeReporte ;
   final _serverStreamController = StreamController<Server>.broadcast();
   Server server;
+
+  List<ReservaReporte> _reservasReportes = new List();
+  final _reservasReportesStreamController =
+      StreamController<List<ReservaReporte>>.broadcast();
 
   List<Reserva> _reservas = new List();
   final _reservaStreamController = StreamController<List<Reserva>>.broadcast();
@@ -52,10 +59,16 @@ class WebSocketInfo with ChangeNotifier {
     _computadorasStreamController?.close();
     _reservaStreamController?.close();
     _reservasAdminStreamController?.close();
+    _reservasReportesStreamController?.close();
   }
 
   Function(Server) get serverSink => _serverStreamController.sink.add;
   Stream<Server> get serverStream => _serverStreamController.stream;
+
+  Function(List<ReservaReporte>) get reservaReportesSink =>
+      _reservasReportesStreamController.sink.add;
+  Stream<List<ReservaReporte>> get reservarReporteStream =>
+      _reservasReportesStreamController.stream;
 
   Function(List<Reserva>) get reservaSink => _reservaStreamController.sink.add;
   Stream<List<Reserva>> get reservarStream => _reservaStreamController.stream;
@@ -207,6 +220,12 @@ class WebSocketInfo with ChangeNotifier {
         print('/reservasAdmin response socket');
         if (valueMap['ok'] && _tipo == 3) getReservasAdmin(valueMap);
         break;
+
+      case '/reservasReportes':
+        print('/reservasReportes response socket');
+        
+        if (valueMap['ok'] && _tipo == 3 && _lastTipoReporte==valueMap['tipo'] && _lastTimeReporte==valueMap['time']) getReservaReportes(valueMap);
+        break;
       default:
         print(message);
         break;
@@ -220,6 +239,7 @@ class WebSocketInfo with ChangeNotifier {
     laboratoriosSink(null);
     computadorasSink(null);
     reservasAdminSink(null);
+    reservaReportesSink(null);
     if (_channel != null) {
       // add in a reconnect delay
       await Future.delayed(Duration(seconds: 4));
@@ -232,20 +252,20 @@ class WebSocketInfo with ChangeNotifier {
     intServer();
     intMiReserva();
     initReservasAdmin(_lastTipo);
-    try{
-    _channel.stream.listen(
-      _onMessageFromServer,
-      onDone: () {
-        debugPrint('ws channel closed');
-        reconnect();
-      },
-      onError: (error) {
-        debugPrint('ws error $error');
-        reconnect();
-      },
-    );
-    }catch(e)
-    {
+    initReservasReporte(_lastTimeReporte, _lastTipoReporte);
+    try {
+      _channel.stream.listen(
+        _onMessageFromServer,
+        onDone: () {
+          debugPrint('ws channel closed');
+          reconnect();
+        },
+        onError: (error) {
+          debugPrint('ws error $error');
+          reconnect();
+        },
+      );
+    } catch (e) {
       print('erro en listen');
       print(e.toString());
     }
@@ -310,6 +330,16 @@ class WebSocketInfo with ChangeNotifier {
     }
   }
 
+  initReservasReporte(int time,int type) async {
+    _lastTipoReporte = type;
+    _lastTimeReporte = time;
+    String tipo = await storage.read(key: 'tipo');
+    if (tipo == "3") {
+      print('/reservasReportes/$time/$type');
+      _channel.sink.add('/reservasReportes/$time/$type');
+    }
+  }
+
   Future<Server> getServer(var valueMap) async {
     server = new Server.fromJson(valueMap);
     serverSink(server);
@@ -340,7 +370,7 @@ class WebSocketInfo with ChangeNotifier {
   Future<List<ReservaAdmin>> getReservasAdmin(var datos) async {
     String lab = await storage.read(key: 'laboratorio');
     int ilab = int.parse(lab);
-    if (ilab == datos['lab'] && _lastTipo==datos['tipo']) {
+    if (ilab == datos['lab'] && _lastTipo == datos['tipo']) {
       final reservasX = new ReservasAdmin.fromJsonList(datos['info']);
       final resp = reservasX.items;
       _reservasAdmin.clear();
@@ -377,6 +407,21 @@ class WebSocketInfo with ChangeNotifier {
     }
     print('reserva validators $reservaCompu,$canReservaLab');
     reservaSink(resp);
+    return resp;
+  }
+
+  Future<List<ReservaReporte>> getReservaReportes(var datos) async {
+    final reser = new ReservasReportes.fromJsonList(datos['info']);
+    final resp = reser.items;
+    _reservasReportes.clear();
+    _reservasReportes.addAll(resp);
+    await new Future.delayed(const Duration(milliseconds: 500));
+    if (resp.length == 0) {
+      reservaReportesSink([]);
+      return [];
+    }
+    print('reserva reportes');
+    reservaReportesSink(resp);
     return resp;
   }
 }

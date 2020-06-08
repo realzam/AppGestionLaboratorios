@@ -66,13 +66,23 @@ class _DocentesReservaTabState extends State<DocentesReservaTab> {
             });
           }
           if (snapshot.data.length == 0)
-            return Center(
+          {
+             if (fondoColor != Colors.white) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                setState(() {
+                    fondoColor = Colors.white;
+                });
+              });}
+               return Center(
                 child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 _reservaEmpty(),
               ],
             ));
+          
+
+          }
           return ListView.builder(
             itemCount: snapshot.data.length,
             itemBuilder: (BuildContext context, int i) {
@@ -90,7 +100,7 @@ class _DocentesReservaTabState extends State<DocentesReservaTab> {
           color: Color.fromRGBO(1, 127, 255, 1.0),
           size: 50.0,
         );
-      },
+      }
     );
   }
 

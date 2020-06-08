@@ -38,7 +38,10 @@ dependencies:
   hidden_drawer_menu: ^1.1.2
   argon_buttons_flutter: ^1.0.2
   flutter_spinkit: ^4.1.2+1
-  splashscreen:
+  flutter_pdfview:
+  path_provider:
+  flutter_speed_dial:
+  uni_links:
 
 dev_dependencies:
   flutter_test:
