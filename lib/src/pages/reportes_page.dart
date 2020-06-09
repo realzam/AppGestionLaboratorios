@@ -11,6 +11,7 @@ import 'package:proyecto/src/providers/usuario_provider.dart';
 import 'package:proyecto/src/providers/webSocketInformation.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_plugin_pdf_viewer/flutter_plugin_pdf_viewer.dart';
 
 class ReportesPage extends StatefulWidget {
   @override
@@ -31,17 +32,6 @@ class _ReportesPageState extends State<ReportesPage> {
   bool isEmpty = false;
   bool isLoading = false;
   final usuarioProvider = new UsuarioProvider();
-  @override
-  void initState() {
-    super.initState();
-
-    getFileFromAsset("assets/mypdf.pdf").then((f) {
-      setState(() {
-        assetPdfPath = f.path;
-        print(assetPdfPath);
-      });
-    });
-  }
 
   Future<File> getFileFromAsset(String asset) async {
     try {
@@ -273,8 +263,9 @@ class _ReportesPageState extends State<ReportesPage> {
     Map<String, dynamic> f = await usuarioProvider.getFileFromUrl(tiempo, tipo);
     Scaffold.of(context).hideCurrentSnackBar();
     if (f['status']) {
-      
-      String pdfPath = f['file'].path;
+      print('neww plugin');
+      File pdf = f['file'];
+      PDFDocument document=await PDFDocument.fromFile(pdf);
       SnackBar mySnackBar = SnackBar(
           duration: Duration(seconds: 10),
           content: Text('Pdf generado correctamente'),
@@ -284,15 +275,11 @@ class _ReportesPageState extends State<ReportesPage> {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => PdfViewPage(path: pdfPath)));
+                      builder: (context) => PdfViewPage(document: document)));
             },
           ));
       Scaffold.of(context).showSnackBar(mySnackBar);
 
-      setState(() {
-        urlPDFPath = pdfPath;
-        print(urlPDFPath);
-      });
     } else {
       SnackBar mySnackBar =
           SnackBar(content: Text('Hubo un error al generar el pdf'));
@@ -523,32 +510,4 @@ class _ReportesPageState extends State<ReportesPage> {
                 DataCell(Text('${name.hora}')),
               ]))
           .toList());
-
-  Widget bontonAbrirPadf() {
-    return RaisedButton(
-        onPressed: () {
-          if (assetPdfPath != null || assetPdfPath != "") {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => PdfViewPage(path: assetPdfPath)));
-          }
-        },
-        child: Text('open from Asset'),
-        color: Colors.cyan);
-  }
-
-  Widget botonGenerarPdf(BuildContext context) {
-    return RaisedButton(
-        onPressed: () {
-          if (urlPDFPath != null || urlPDFPath != "") {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => PdfViewPage(path: urlPDFPath)));
-          }
-        },
-        child: Text('open from url'),
-        color: Colors.amber);
-  }
 }

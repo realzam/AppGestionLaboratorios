@@ -24,7 +24,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   
   cupertino_icons: ^0.1.2
-  rxdart: ^0.24.0
+  rxdart: ^0.21.0
   http: ^0.12.0+4 
   shared_preferences:
   flutter_secure_storage:
@@ -42,6 +42,7 @@ dependencies:
   path_provider:
   flutter_speed_dial:
   uni_links:
+  flutter_plugin_pdf_viewer: ^1.0.7
 
 dev_dependencies:
   flutter_test:

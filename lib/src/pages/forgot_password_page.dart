@@ -74,7 +74,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 FlatButton(
                   child: Text('Regresar al inico'),
                   onPressed: () =>
-                      Navigator.pushReplacementNamed(context, 'redirect'),
+                      Navigator.pushReplacementNamed(context, 'ingreso'),
                 ),
               ],
             ),
@@ -152,7 +152,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       stop();
       showInSnackBar('Correo enviado');
       await new Future.delayed(const Duration(milliseconds: 2000));
-      Navigator.pushReplacementNamed(context, 'redirect');
+      Navigator.pushReplacementNamed(context, 'ingreso');
     }
   }
 

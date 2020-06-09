@@ -114,7 +114,7 @@ class _MyAppState extends State<MyApp> {
         debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
         title: 'control ESCOM',
-        initialRoute: 'ingreso',
+        initialRoute: prefs.pagina,
         routes: {
           'ingreso': (BuildContext context) => IngresoPage(),
           'recuperar': (BuildContext context) => RecuperarPasswordPage(),
